@@ -1,0 +1,74 @@
+{
+  "app_name": "TheCoder Finance",
+  "refresh_interval": 300,
+  "database": {
+    "path": "transactions.db"
+  },
+  "gmail": {
+    "enabled": true,
+    "credentials_file": "credentials.json",
+    "token_file": "token.json",
+    "user_id": "me",
+    "max_results_per_query": 150,
+    "search_queries": {
+      "amazon": "subject:\"Amazon.in order\" OR subject:\"Your Amazon.in order\"",
+      "flipkart": "subject:\"Flipkart order\" OR subject:\"Order Confirmation - Flipkart\"",
+      "sbi_txn": "subject:\"SBI Transaction Alert\" OR subject:\"Transaction Alert from SBI\"",
+      "sbi_stmt": "subject:\"SBI Credit Card Statement\" OR subject:\"SBI Card Statement\""
+    }
+  },
+  "sms": {
+    "enabled": false,
+    "android_api_url": "http://127.0.0.1:5000/sms"
+  },
+  "statements": {
+    "enabled": true,
+    "folder": "statements",
+    "password": null
+  },
+  "categories_rules": {
+    "Shopping": [
+      "amazon",
+      "flipkart",
+      "myntra",
+      "ajio"
+    ],
+    "Food": [
+      "swiggy",
+      "zomato",
+      "dominos",
+      "kfc",
+      "pizza hut"
+    ],
+    "Fuel": [
+      "petrol",
+      "hp petrol",
+      "bharat petroleum",
+      "indian oil"
+    ],
+    "Subscriptions": [
+      "netflix",
+      "spotify",
+      "youtube premium",
+      "prime"
+    ],
+    "Bills": [
+      "electricity",
+      "mobile recharge",
+      "broadband",
+      "dth"
+    ],
+    "Travel": [
+      "ola",
+      "uber",
+      "irctc",
+      "indigo",
+      "airasia"
+    ],
+    "Income": [
+      "salary",
+      "interest",
+      "refund"
+    ]
+  }
+}
