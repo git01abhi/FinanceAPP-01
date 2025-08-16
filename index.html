@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ app_name }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 0; background:#0b0b0c; color:#eaeaea;}
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .card { background:#121214; border:1px solid #222; border-radius: 18px; padding:16px; box-shadow: 0 8px 30px rgba(0,0,0,.3); }
+    .table { width:100%; border-collapse: collapse; }
+    .table th, .table td { border-bottom:1px solid #222; padding:10px; text-align:left; }
+    .pill { padding:4px 10px; border-radius:999px; background:#1e293b; color:#93c5fd; font-size:12px; }
+    .title { font-size: 22px; font-weight: 700; margin: 10px 0 6px; }
+    .muted { color:#9ca3af; font-size:12px; }
+    button { background:#1f2937; color:#e5e7eb; border:1px solid #374151; padding:8px 12px; border-radius:10px; cursor:pointer; }
+    input, select { background:#0f172a; border:1px solid #334155; color:#e5e7eb; padding:8px 10px; border-radius:10px; }
+    canvas { width: 100% !important; height: 300px !important; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <div>
+        <div class="title">{{ app_name }}</div>
+        <div class="muted">Local-first • Gmail / SMS / Statements • AI categorization • Editable</div>
+      </div>
+      <a href="/" onclick="fetchNow(); return false;"><button>Fetch Now</button></a>
+    </div>
+
+    <div class="cards" style="margin-top:16px;">
+      <div class="card">
+        <div class="title">Spending by Category</div>
+        <canvas id="catChart"></canvas>
+      </div>
+      <div class="card">
+        <div class="title">Spending Over Time</div>
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div class="title">Recent Transactions</div>
+        <div class="muted">Click category to edit</div>
+      </div>
+      <table class="table" id="txTable">
+        <thead>
+          <tr><th>Date</th><th>Merchant</th><th>Amount</th><th>Category</th><th>Source</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+let catChart, trendChart;
+
+async function loadData() {
+  const s = await fetch('/api/summary').then(r=>r.json());
+  const t = await fetch('/api/transactions').then(r=>r.json());
+
+  // Category chart
+  const labels = s.categories.map(x=>x.category);
+  const amounts = s.categories.map(x=>Math.abs(x.amount));
+  if (catChart) catChart.destroy();
+  catChart = new Chart(document.getElementById('catChart'), {
+    type: 'pie',
+    data: { labels, datasets: [{ data: amounts }] },
+    options: { plugins: { legend: { labels: { color: '#eaeaea' } } } }
+  });
+
+  // Trend chart
+  const tlabels = s.trend.map(x=>x.date);
+  const tdata = s.trend.map(x=>x.amount);
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: { labels: tlabels, datasets: [{ label:'Total', data: tdata}] },
+    options: {
+      scales: {
+        x: { ticks: { color:'#eaeaea' }, grid: { color:'#222' }},
+        y: { ticks: { color:'#eaeaea' }, grid: { color:'#222' }}
+      },
+      plugins: { legend: { labels: { color: '#eaeaea' } } }
+    }
+  });
+
+  // Table
+  const tbody = document.querySelector('#txTable tbody');
+  tbody.innerHTML = '';
+  t.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = \`
+      <td>\${row.date}</td>
+      <td>\${row.merchant}</td>
+      <td>\${row.amount}</td>
+      <td>
+        <select onchange="updateCategory(\${row.id}, this.value)">
+          \${renderCategoryOptions(row.category)}
+        </select>
+      </td>
+      <td><span class="pill">\${row.source}</span></td>\`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderCategoryOptions(selected) {
+  const opts = ['Shopping','Food','Fuel','Subscriptions','Bills','Travel','Income','Other','Uncategorized'];
+  return opts.map(o => \`<option \${o===selected?'selected':''}>\${o}</option>\`).join('');
+}
+
+async function updateCategory(id, category) {
+  await fetch('/api/update_category', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id, category})
+  });
+  loadData();
+}
+
+async function fetchNow(){
+  await fetch('/api/summary'); // triggers app to ensure the server is up
+  // No direct endpoint to fetch; the server schedules and runs fetch on start.
+  // You can just reload data.
+  loadData();
+}
+
+loadData();
+setInterval(loadData, 15000); // refresh UI every 15s
+</script>
+</body>
+</html>
